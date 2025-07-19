@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Founder Scorecard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top to prevent content overflow issues */
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        /* Custom scrollbar for textareas */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        pre {
+            white-space: pre-wrap; /* Ensures long lines wrap */
+            word-wrap: break-word; /* Breaks words if necessary */
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3B82F6; /* Blue spinner */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Basic animation for messages */
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .fade-in-out {
+            animation: fadeInOut 3s forwards;
+        }
+        /* Custom styles for the gamified report */
+        .archetype-badge {
+            background: linear-gradient(45deg, #60A5FA, #3B82F6);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px; /* Fully rounded */
+            font-size: 1.5rem; /* Larger font */
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            display: inline-block;
+            margin-top: 1rem;
+        }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #E0F2FE; /* Light blue */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 1rem auto;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+        .score-circle .score-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #1D4ED8; /* Darker blue */
+        }
+        .score-circle .score-label {
+            font-size: 0.875rem;
+            color: #3B82F6;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-3xl border border-gray-200 mt-8 mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Founder Scorecard</h1>
+        <p class="text-gray-600 text-center mb-8">Discover your founder personality traits and get a gamified score!</p>
+
+        <!-- Twitter Persona Input -->
+        <div class="mb-6">
+            <label for="twitterPersona" class="block text-gray-700 text-sm font-medium mb-2">
+                Describe your Twitter persona or paste sample tweets (e.g., your bio, recent posts, topics you engage with):
+            </label>
+            <textarea id="twitterPersona" rows="8" class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 bg-gray-50" placeholder="e.g., 'I tweet about tech trends, AI, and entrepreneurship. I often share articles on innovation and engage in discussions about startup challenges.'"></textarea>
+        </div>
+
+        <!-- Personality Questions -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Quick Questions:</h2>
+            <div id="questionsContainer" class="space-y-4">
+                <!-- Questions will be dynamically loaded here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-col sm:flex-row justify-center gap-4 mb-6">
+            <button id="calculateScoreBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center">
+                <span id="buttonText">Calculate My Founder Score</span>
+                <div id="loadingSpinner" class="loading-spinner ml-3 hidden"></div>
+            </button>
+            <button id="clearBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
+                Clear All
+            </button>
+        </div>
+
+        <!-- Message Box -->
+        <div id="messageBox" class="text-center py-2 rounded-lg mb-4 hidden"></div>
+
+        <!-- Results Area -->
+        <div id="resultsArea" class="hidden bg-gray-100 p-6 rounded-xl border border-gray-300">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Your Founder Scorecard Results!</h2>
+
+            <div class="text-center mb-6">
+                <p class="text-lg font-medium text-gray-700">Your Overall Founder Score:</p>
+                <div class="score-circle">
+                    <p id="overallScore" class="score-number">0</p>
+                    <p class="score-label">/ 100</p>
+                </div>
+                <p class="text-lg font-medium text-gray-700 mt-4">Your Founder Archetype:</p>
+                <span id="founderArchetype" class="archetype-badge"></span>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">Personality Insights from AI:</h3>
+                <pre id="aiInsights" class="bg-white p-4 rounded-lg border border-gray-200 text-gray-800 text-sm overflow-auto max-h-60 shadow-inner"></pre>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">What Your Archetype Means:</h3>
+                <p id="archetypeDescription" class="bg-white p-4 rounded-lg border border-gray-200 text-gray-700 text-sm shadow-inner"></p>
+            </div>
+
+            <div class="flex justify-center mt-6">
+                <button id="shareTwitterBtn" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.21-6.89L4.94 21.75H1.63l7.73-8.83L1.23 2.25H8.01l4.713 6.23L18.244 2.25zm-2.88 17.463l.975.975h-1.57l-6.89-9.108L4.01 2.25h2.17l5.22 6.89L16.17 19.713z"/>
+                    </svg>
+                    Share My Score on Twitter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get references to DOM elements
+        const twitterPersonaInput = document.getElementById('twitterPersona');
+        const questionsContainer = document.getElementById('questionsContainer');
+        const calculateScoreBtn = document.getElementById('calculateScoreBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const messageBox = document.getElementById('messageBox');
+        const resultsArea = document.getElementById('resultsArea');
+        const overallScoreElem = document.getElementById('overallScore');
+        const founderArchetypeElem = document.getElementById('founderArchetype');
+        const aiInsightsElem = document.getElementById('aiInsights');
+        const archetypeDescriptionElem = document.getElementById('archetypeDescription');
+        const shareTwitterBtn = document.getElementById('shareTwitterBtn');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const buttonText = document.getElementById('buttonText');
+
+        // Define personality questions and their scoring (20 questions)
+        const questions = [
+            {
+                question: "When starting a new project, I am most excited by:",
+                name: "q1",
+                options: [
+                    { text: "The initial brainstorming and idea generation.", score: 15 },
+                    { text: "Developing a detailed plan and timeline.", score: 10 },
+                    { text: "Recruiting and building the right team.", score: 12 },
+                    { text: "Seeing the first tangible results.", score: 8 }
+                ]
+            },
+            {
+                question: "My primary motivation for building something new is:",
+                name: "q2",
+                options: [
+                    { text: "Solving a significant problem for others.", score: 15 },
+                    { text: "Achieving financial independence.", score: 8 },
+                    { text: "Leaving a lasting impact on the world.", score: 12 },
+                    { text: "The thrill of creation and innovation.", score: 10 }
+                ]
+            },
+            {
+                question: "When faced with a major setback, my first reaction is to:",
+                name: "q3",
+                options: [
+                    { text: "Analyze what went wrong and pivot quickly.", score: 15 },
+                    { text: "Feel discouraged but eventually regroup.", score: 8 },
+                    { text: "Seek advice and support from my network.", score: 10 },
+                    { text: "Double down on my original approach.", score: 5 }
+                ]
+            },
+            {
+                question: "I prefer to make decisions based on:",
+                name: "q4",
+                options: [
+                    { text: "Intuition and gut feeling.", score: 10 },
+                    { text: "Thorough data analysis and research.", score: 12 },
+                    { text: "Consensus from my team.", score: 8 },
+                    { text: "A blend of data and intuition.", score: 15 }
+                ]
+            },
+            {
+                question: "My ideal team environment is one where:",
+                name: "q5",
+                options: [
+                    { text: "Everyone is highly specialized and efficient.", score: 8 },
+                    { text: "Collaboration and open communication are key.", score: 15 },
+                    { text: "There's a clear hierarchy and defined roles.", score: 5 },
+                    { text: "Creativity and experimentation are encouraged.", score: 12 }
+                ]
+            },
+            {
+                question: "How do you handle criticism of your ideas?",
+                name: "q6",
+                options: [
+                    { text: "I listen carefully and consider all feedback.", score: 15 },
+                    { text: "I defend my ideas strongly.", score: 5 },
+                    { text: "I get defensive initially but reflect later.", score: 8 },
+                    { text: "I appreciate constructive criticism for improvement.", score: 12 }
+                ]
+            },
+            {
+                question: "My approach to networking is:",
+                name: "q7",
+                options: [
+                    { text: "Strategic, focusing on key connections.", score: 12 },
+                    { text: "I enjoy meeting new people and building relationships organically.", score: 15 },
+                    { text: "I only network when absolutely necessary.", score: 5 },
+                    { text: "I prefer to let my work speak for itself.", score: 8 }
+                ]
+            },
+            {
+                question: "When delegating tasks, I tend to:",
+                name: "q8",
+                options: [
+                    { text: "Provide detailed instructions and monitor closely.", score: 8 },
+                    { text: "Give clear objectives and empower my team to find solutions.", score: 15 },
+                    { text: "Do it myself to ensure it's done right.", score: 5 },
+                    { text: "Delegate based on individual strengths.", score: 12 }
+                ]
+            },
+            {
+                question: "My comfort level with ambiguity is:",
+                name: "q9",
+                options: [
+                    { text: "Very high; I thrive in uncertain environments.", score: 15 },
+                    { text: "Moderate; I prefer some structure but can adapt.", score: 10 },
+                    { text: "Low; I need clear direction and data.", score: 5 },
+                    { text: "I see it as an opportunity for innovation.", score: 12 }
+                ]
+            },
+            {
+                question: "How do you stay updated on industry trends?",
+                name: "q10",
+                options: [
+                    { text: "I read industry reports and news daily.", score: 12 },
+                    { text: "I engage with thought leaders and attend conferences.", score: 15 },
+                    { text: "I rely on my team to inform me of crucial updates.", score: 8 },
+                    { text: "I learn as needed when a new challenge arises.", score: 5 }
+                ]
+            },
+            {
+                question: "My biggest strength as a leader is:",
+                name: "q11",
+                options: [
+                    { text: "My ability to motivate and inspire others.", score: 15 },
+                    { text: "My strategic vision and foresight.", score: 12 },
+                    { text: "My attention to detail and execution.", score: 8 },
+                    { text: "My problem-solving skills under pressure.", score: 10 }
+                ]
+            },
+            {
+                question: "When launching a new product, I am most concerned about:",
+                name: "q12",
+                options: [
+                    { text: "Market acceptance and user feedback.", score: 15 },
+                    { text: "Competitive response.", score: 10 },
+                    { text: "Hitting sales targets.", score: 8 },
+                    { text: "The technical stability of the product.", score: 12 }
+                ]
+            },
+            {
+                question: "I define success as:",
+                name: "q13",
+                options: [
+                    { text: "Achieving my personal goals.", score: 8 },
+                    { text: "Creating something that genuinely helps people.", score: 15 },
+                    { text: "Outperforming my competitors.", score: 10 },
+                    { text: "Building a sustainable and impactful organization.", score: 12 }
+                ]
+            },
+            {
+                question: "My preferred method for learning new skills is:",
+                name: "q14",
+                options: [
+                    { text: "Hands-on experimentation and practice.", score: 15 },
+                    { text: "Reading books and online courses.", score: 10 },
+                    { text: "Learning from mentors and experts.", score: 12 },
+                    { text: "Formal education and certifications.", score: 8 }
+                ]
+            },
+            {
+                question: "How do you handle conflict within your team?",
+                name: "q15",
+                options: [
+                    { text: "I address it directly and facilitate resolution.", score: 15 },
+                    { text: "I try to mediate and find common ground.", score: 12 },
+                    { text: "I prefer to avoid it and hope it resolves itself.", score: 5 },
+                    { text: "I set clear boundaries and expectations to prevent it.", score: 8 }
+                ]
+            },
+            {
+                question: "My vision for the future is typically:",
+                name: "q16",
+                options: [
+                    { text: "Bold, ambitious, and slightly unconventional.", score: 15 },
+                    { text: "Realistic and achievable within current constraints.", score: 8 },
+                    { text: "Focused on incremental improvements.", score: 5 },
+                    { text: "Long-term and adaptable to change.", score: 12 }
+                ]
+            },
+            {
+                question: "When making a pitch or presentation, I focus on:",
+                name: "q17",
+                options: [
+                    { text: "Storytelling and emotional connection.", score: 15 },
+                    { text: "Detailed data and logical arguments.", score: 12 },
+                    { text: "Highlighting my personal achievements.", score: 5 },
+                    { text: "Addressing potential objections proactively.", score: 10 }
+                ]
+            },
+            {
+                question: "My attitude towards failure is:",
+                name: "q18",
+                options: [
+                    { text: "It's a valuable learning opportunity.", score: 15 },
+                    { text: "It's a necessary step towards success.", score: 12 },
+                    { text: "It's something to be avoided at all costs.", score: 5 },
+                    { text: "It motivates me to work harder.", score: 8 }
+                ]
+            },
+            {
+                question: "How do you manage your energy and prevent burnout?",
+                name: "q19",
+                options: [
+                    { text: "I maintain a strict work-life balance.", score: 10 },
+                    { text: "I am passionate about my work, which fuels me.", score: 12 },
+                    { text: "I take short, frequent breaks and delegate effectively.", score: 15 },
+                    { text: "I push through until the work is done.", score: 5 }
+                ]
+            },
+            {
+                question: "My ideal customer relationship is built on:",
+                name: "q20",
+                options: [
+                    { text: "Trust, transparency, and mutual growth.", score: 15 },
+                    { text: "Providing the best product at the lowest price.", score: 8 },
+                    { text: "Efficient customer service and support.", score: 10 },
+                    { text: "Regular feedback and continuous improvement.", score: 12 }
+                ]
+            }
+        ];
+
+        // Define Founder Archetypes
+        const founderArchetypes = [
+            {
+                name: "Aspiring Innovator 🐣",
+                minScore: 0,
+                maxScore: 20,
+                description: "You're just starting your journey into the world of entrepreneurship. You have great ideas and a budding curiosity. Focus on learning, networking, and building foundational skills. Every great founder started somewhere!"
+            },
+            {
+                name: "Budding Builder 🛠️",
+                minScore: 21,
+                maxScore: 40,
+                description: "You're eager to create and are taking concrete steps towards your goals. You're good at execution but might benefit from broadening your strategic vision or embracing more risk. Keep building, and don't be afraid to experiment!"
+            },
+            {
+                name: "Strategic Architect 🏗️",
+                minScore: 41,
+                maxScore: 60,
+                description: "You possess a strong blend of vision and execution. You're good at planning, analyzing, and building robust solutions. Continue to refine your leadership and adaptability to navigate unpredictable startup landscapes."
+            },
+            {
+                name: "Visionary Leader ✨",
+                minScore: 61,
+                maxScore: 80,
+                description: "You're a natural leader with a compelling vision and the ability to inspire others. You excel at strategic thinking and fostering innovation. Your challenge is to ensure your bold ideas are grounded in practical execution and market needs."
+            },
+            {
+                name: "Disruptive Force 🚀",
+                minScore: 81,
+                maxScore: 100,
+                description: "You are a true trailblazer, unafraid to challenge the status quo and drive significant change. Your resilience, innovative spirit, and leadership qualities make you a formidable founder. Keep pushing boundaries and inspiring disruption!"
+            }
+        ];
+
+        // Function to dynamically render questions
+        function renderQuestions() {
+            questionsContainer.innerHTML = ''; // Clear existing questions
+            questions.forEach((q, qIndex) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-200';
+                questionDiv.innerHTML = `
+                    <p class="font-medium text-gray-700 mb-2">${qIndex + 1}. ${q.question}</p>
+                    <div class="space-y-2">
+                        ${q.options.map((option, oIndex) => `
+                            <label class="flex items-center cursor-pointer text-gray-600 hover:text-gray-800">
+                                <input type="radio" name="${q.name}" value="${option.score}" class="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out">
+                                <span class="ml-2">${option.text}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+                questionsContainer.appendChild(questionDiv);
+            });
+        }
+
+        // Call renderQuestions on page load
+        document.addEventListener('DOMContentLoaded', renderQuestions);
+
+        // Function to display messages in the message box
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
+            messageBox.classList.add('fade-in-out'); // Apply fade animation
+
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-800');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'text-red-800');
+            } else { // info
+                messageBox.classList.add('bg-blue-100', 'text-blue-800');
+            }
+
+            // Remove the fade-in-out class after animation to allow it to be re-triggered
+            messageBox.addEventListener('animationend', () => {
+                messageBox.classList.remove('fade-in-out');
+                messageBox.classList.add('hidden'); // Hide after animation
+            }, { once: true });
+        }
+
+        // Function to calculate score from questions
+        function getQuestionScore() {
+            let score = 0;
+            let allAnswered = true;
+            questions.forEach(q => {
+                const selectedOption = document.querySelector(`input[name="${q.name}"]:checked`);
+                if (selectedOption) {
+                    score += parseInt(selectedOption.value);
+                } else {
+                    allAnswered = false;
+                }
+            });
+            return { score, allAnswered };
+        }
+
+        // Function to get founder archetype based on score
+        function getFounderArchetype(score) {
+            for (const archetype of founderArchetypes) {
+                if (score >= archetype.minScore && score <= archetype.maxScore) {
+                    return archetype;
+                }
+            }
+            return founderArchetypes[0]; // Default to the first archetype if no match (shouldn't happen with correct ranges)
+        }
+
+        // Event listener for the Calculate Score button
+        calculateScoreBtn.addEventListener('click', async () => {
+            const twitterPersonaText = twitterPersonaInput.value.trim();
+            const { score: questionScore, allAnswered } = getQuestionScore();
+
+            // Clear previous results and messages
+            resultsArea.classList.add('hidden');
+            messageBox.classList.add('hidden');
+            overallScoreElem.textContent = '0';
+            founderArchetypeElem.textContent = '';
+            aiInsightsElem.textContent = '';
+            archetypeDescriptionElem.textContent = '';
+
+            if (twitterPersonaText === '' && !allAnswered) {
+                showMessage('Please describe your Twitter persona and answer all questions.', 'info');
+                return;
+            }
+            if (twitterPersonaText === '') {
+                showMessage('Please describe your Twitter persona for AI insights.', 'info');
+                return;
+            }
+            if (!allAnswered) {
+                showMessage('Please answer all the personality questions.', 'info');
+                return;
+            }
+
+            // Show loading state
+            buttonText.textContent = 'Analyzing...';
+            loadingSpinner.classList.remove('hidden');
+            calculateScoreBtn.disabled = true;
+            clearBtn.disabled = true;
+
+            try {
+                // Call LLM for personality insights
+                let chatHistory = [];
+                const prompt = `Analyze the following text, which describes a person's Twitter persona or contains sample tweets. Based on this text, identify key personality traits relevant to a startup founder, such as leadership, innovation, resilience, communication skills, strategic thinking, risk-taking, and problem-solving. Provide a brief assessment of each relevant trait and an overall summary. Focus on positive and constructive observations.
+                Text: ${twitterPersonaText}`;
+
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // Canvas will automatically provide the API key
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                let aiPersonalityInsights = "Could not generate insights. Please try again or provide more detailed input.";
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    aiPersonalityInsights = result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected LLM response structure:", result);
+                    // showMessage('Failed to get AI insights. Please try again.', 'error'); // Don't show error, just use default message
+                }
+
+                aiInsightsElem.textContent = aiPersonalityInsights;
+
+                // Combine scores: Max question score is 20 questions * 15 points max = 300.
+                // We'll scale the question score to contribute up to 50 points to the total 100.
+                const maxQuestionScore = questions.length * 15; // 20 * 15 = 300
+                const scaledQuestionScore = (questionScore / maxQuestionScore) * 50; // Max 50 points from questions
+
+                // For AI insights, we'll give a fixed bonus if insights were generated,
+                // contributing the other 50 points.
+                const aiBonus = (aiPersonalityInsights !== "Could not generate insights. Please try again or provide more detailed input.") ? 50 : 0; // Max 50 points from AI
+
+                const overallScore = Math.round(scaledQuestionScore + aiBonus);
+                const finalScore = Math.min(overallScore, 100); // Cap at 100
+                overallScoreElem.textContent = finalScore;
+
+                const archetype = getFounderArchetype(finalScore);
+                founderArchetypeElem.textContent = archetype.name;
+                archetypeDescriptionElem.textContent = archetype.description;
+
+                resultsArea.classList.remove('hidden');
+                showMessage('Founder Scorecard generated!', 'success');
+
+            } catch (error) {
+                console.error("Error calculating score:", error);
+                showMessage('An error occurred while calculating your score. Please try again.', 'error');
+                aiInsightsElem.textContent = "An error occurred while generating AI insights.";
+            } finally {
+                // Hide loading state
+                buttonText.textContent = 'Calculate My Founder Score';
+                loadingSpinner.classList.add('hidden');
+                calculateScoreBtn.disabled = false;
+                clearBtn.disabled = false;
+            }
+        });
+
+        // Event listener for the Clear All button
+        clearBtn.addEventListener('click', () => {
+            twitterPersonaInput.value = ''; // Clear input textarea
+            // Clear radio selections
+            questions.forEach(q => {
+                const radios = document.querySelectorAll(`input[name="${q.name}"]`);
+                radios.forEach(radio => radio.checked = false);
+            });
+            resultsArea.classList.add('hidden'); // Hide results
+            messageBox.classList.add('hidden'); // Hide message box
+            overallScoreElem.textContent = '0';
+            founderArchetypeElem.textContent = '';
+            aiInsightsElem.textContent = '';
+            archetypeDescriptionElem.textContent = '';
+            showMessage('All fields cleared.', 'info');
+        });
+
+        // Event listener for the Share on Twitter button
+        shareTwitterBtn.addEventListener('click', () => {
+            const score = overallScoreElem.textContent;
+            const archetype = founderArchetypeElem.textContent;
+            const description = archetypeDescriptionElem.textContent.split('.')[0] + '.'; // Get just the first sentence of the description
+            const text = encodeURIComponent(`🚀 My Founder Score is ${score}/100, and I'm a "${archetype}"! \n\n${description} What's your founder archetype? Discover your startup personality! 👇`);
+            const url = encodeURIComponent(window.location.href); // Link back to the app itself
+            const hashtags = encodeURIComponent('FounderScorecard,StartupLife,Entrepreneur,PersonalityTest,AIInsights');
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}&hashtags=${hashtags}`;
+            window.open(twitterUrl, '_blank');
+        });
+    </script>
+</body>
+</html>
